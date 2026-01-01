@@ -21,23 +21,37 @@ export async function POST() {
     );
   }
 
-  const users = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, email));
+  const name = user.fullName ?? "";
 
-  if (users?.length === 0) {
-    const data = {
-      name: user?.fullName ?? "",
-      email,
-    };
-    const result = await db
+  try {
+    const inserted = await db
       .insert(usersTable)
-      .values({
-        ...data,
-      })
+      .values({ name, email })
+      .onConflictDoNothing({ target: usersTable.email })
       .returning();
-    return NextResponse.json(result[0] ?? {});
+
+    if (inserted[0]) {
+      return NextResponse.json(inserted[0]);
+    }
+
+    const existing = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, email));
+
+    if (existing[0]) {
+      return NextResponse.json(existing[0]);
+    }
+
+    return NextResponse.json(
+      { error: "User record could not be created or loaded" },
+      { status: 500 }
+    );
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "Failed to create or load user" },
+      { status: 500 }
+    );
   }
-  return NextResponse.json(users[0] ?? {});
 }
