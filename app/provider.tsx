@@ -6,15 +6,15 @@ import { UserDetailContext } from "@/context/UserDetailContext";
 const Provider = ({ children }: { children: React.ReactNode }) => {
   const [userDetails, setUserDetail] = useState();
 
-  useEffect(() => {
-    createNewUser();
-  }, []);
-
   const createNewUser = async () => {
-    const result = await axios.post("/api/users", {});
+    const result = await axios.post("/api/user", {});
     console.log(result.data);
     setUserDetail(result?.data);
   };
+
+  useEffect(() => {
+    createNewUser();
+  }, []);
 
   return (
     <UserDetailContext.Provider value={{ userDetails, setUserDetail }}>
