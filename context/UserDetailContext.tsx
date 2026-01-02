@@ -1,9 +1,9 @@
-import { createContext } from "react";
+import { createContext, type Dispatch, type SetStateAction } from "react";
 
 export const UserDetailContext = createContext<{
-  userDetails: any;
-  setUserDetail: (user: any) => void;
+  userDetails: unknown;
+  setUserDetail: Dispatch<SetStateAction<unknown>>;
 }>({
-  userDetails: {},
+  userDetails: null,
   setUserDetail: () => {},
 });
