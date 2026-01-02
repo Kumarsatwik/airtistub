@@ -28,7 +28,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = user.id;
+  const userId = user.emailAddresses?.[0]?.emailAddress;
+  if (!userId) {
+    return NextResponse.json({ error: "User email not found" }, { status: 400 });
+  }
 
   try {
     const result = await db
