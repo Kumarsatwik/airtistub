@@ -14,7 +14,7 @@ export const projectTable = pgTable("project", {
   deviceType: varchar({ length: 255 }).notNull(),
   createdOn: date().defaultNow(),
   config: json(),
-  userId: integer()
-    .references(() => usersTable.id)
+  userId: varchar({ length: 255 })
+    .references(() => usersTable.email)
     .notNull(),
 });
