@@ -31,6 +31,7 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { v7 as uuidv7 } from "uuid";
+import { toast } from "sonner";
 const iconMap = {
   CheckSquare,
   Activity,
@@ -96,22 +97,28 @@ const Hero = () => {
       return;
     }
     if (!prompt) {
+      toast("Please enter a prompt before generating.");
       return;
     }
     setLoading(true);
-    // create new project
-    const result = await axios.post("/api/project", {
-      userInput: prompt,
-      deviceType,
-      projectId: uuidv7(),
-    });
-    console.log(result.data);
-    setLoading(false);
-    // router.push(`/project/${result.data.result.projectId}`);
+    try {
+      // create new project
+      const result = await axios.post("/api/project", {
+        userInput: prompt,
+        deviceType,
+        projectId: uuidv7(),
+      });
+      router.push(`/project/${result.data.result.projectId}`);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      toast.error("Failed to create project. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="relative pt-32 pb-20 px-4 md:px-10 overflow-hidden flex flex-col items-center">
+    <div className="relative pt-32 pb-20 px-4 md:px-10 overflow-hidden flex flex-col items-center z-10">
       {/* Grid Background */}
       <div className="absolute inset-0 -z-10 h-full w-full bg-white bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
 
@@ -179,7 +186,7 @@ const Hero = () => {
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  "Generate"
+                  Generate
                 </>
               )}
             </Button>
