@@ -1,11 +1,34 @@
 import { db } from "@/config/db";
-import { projectTable } from "@/config/schema";
+import { projectTable, usersTable } from "@/config/schema";
+import { eq } from "drizzle-orm";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+const createProjectSchema = z.object({
+  projectId: z.string(),
+  userInput: z.string().min(1),
+  deviceType: z.enum(["mobile", "web"]),
+});
 
 export async function POST(req: NextRequest) {
-  const { userInput, deviceType, projectId } = await req.json();
+  const body = await req.json();
+  const validation = createProjectSchema.safeParse(body);
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: "Invalid request body", details: validation.error.issues },
+      { status: 400 }
+    );
+  }
+  const { userInput, deviceType, projectId } = validation.data;
+
   const user = await currentUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userId = user.id;
 
   try {
     const result = await db
@@ -14,7 +37,7 @@ export async function POST(req: NextRequest) {
         projectId,
         userInput,
         deviceType,
-        userId: user?.emailAddresses[0].emailAddress as string,
+        userId,
       })
       .returning();
     return NextResponse.json({ result: result[0] });
