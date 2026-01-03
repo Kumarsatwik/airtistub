@@ -76,7 +76,7 @@ export function AnimatedGradientTextDemo() {
 }
 
 const Hero = () => {
-  const [deviceType, setDeviceType] = useState<"mobile" | "web">("mobile");
+  const [deviceType, setDeviceType] = useState<"mobile" | "website">("mobile");
   const [prompt, setPrompt] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const { user } = useUser();
@@ -84,7 +84,7 @@ const Hero = () => {
   const [loading, setLoading] = useState(false);
   const handleSuggestionClick = (
     nextPrompt: string,
-    nextDevice: "mobile" | "web"
+    nextDevice: "mobile" | "website"
   ) => {
     setPrompt(nextPrompt);
     setDeviceType(nextDevice);
@@ -164,7 +164,7 @@ const Hero = () => {
               <Select
                 value={deviceType}
                 onValueChange={(value) =>
-                  setDeviceType(value as "mobile" | "web")
+                  setDeviceType(value as "mobile" | "website")
                 }
               >
                 <SelectTrigger className="w-full md:w-[140px] border-none bg-gray-50 text-gray-600 font-medium focus:ring-0 shadow-none hover:bg-gray-100 transition-colors h-10">
@@ -172,7 +172,7 @@ const Hero = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="mobile"> Mobile</SelectItem>
-                  <SelectItem value="web">Website</SelectItem>
+                  <SelectItem value="website">Website</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -202,7 +202,12 @@ const Hero = () => {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => handleSuggestionClick(item.prompt, item.device)}
+                onClick={() =>
+                  handleSuggestionClick(
+                    item.prompt,
+                    item.device as "mobile" | "website"
+                  )
+                }
                 title={item.description}
                 className={`${
                   colorVariants[index % colorVariants.length]
