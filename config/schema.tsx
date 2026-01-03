@@ -10,6 +10,8 @@ export const usersTable = pgTable("users", {
 export const projectTable = pgTable("project", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   projectId: varchar({ length: 255 }).notNull().unique(),
+  projectName: varchar(),
+  theme: varchar(),
   userInput: varchar().notNull(),
   deviceType: varchar({ length: 255 }).notNull(),
   createdOn: date().defaultNow(),
