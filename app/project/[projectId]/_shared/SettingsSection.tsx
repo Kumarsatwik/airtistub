@@ -30,6 +30,7 @@ const SettingsSection = () => {
         </h3>
         <Input
           placeholder="Enter project name"
+          value={projectName}
           onChange={(event) => setProjectName(event.target.value)}
         />
       </div>
@@ -41,6 +42,7 @@ const SettingsSection = () => {
         <Textarea
           placeholder="Enter prompt to generate screen"
           className="resize-none min-h-[100px]"
+          value={userNewScreenInput}
           onChange={(event) => setUserNewScreenInput(event.target.value)}
         />
         <Button className="w-full mt-2" size="sm">
