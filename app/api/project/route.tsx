@@ -1,5 +1,5 @@
 import { db } from "@/config/db";
-import { projectTable, usersTable } from "@/config/schema";
+import { projectTable, screenConfigTable } from "@/config/schema";
 import { currentUser } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
@@ -8,7 +8,7 @@ import { z } from "zod";
 const createProjectSchema = z.object({
   projectId: z.string(),
   userInput: z.string().min(1),
-  deviceType: z.enum(["mobile", "web"]),
+  deviceType: z.enum(["mobile", "website"]),
 });
 
 export async function POST(req: NextRequest) {
@@ -94,7 +94,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ result: result[0] });
+    const screenConfig = await db
+      .select()
+      .from(screenConfigTable)
+      .where(eq(screenConfigTable.projectId, projectId as string));
+
+    return NextResponse.json({
+      projectDetail: result[0],
+      screenConfig,
+    });
   } catch (error) {
     console.error("Error fetching project:", error);
     return NextResponse.json(

@@ -1,4 +1,4 @@
-import { date, integer, json, pgTable, varchar } from "drizzle-orm/pg-core";
+import { date, integer, json, pgTable, text, varchar } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -19,4 +19,16 @@ export const projectTable = pgTable("project", {
   userId: varchar({ length: 255 })
     .references(() => usersTable.email)
     .notNull(),
+});
+
+export const screenConfigTable = pgTable("screenConfig", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  projectId: varchar()
+    .references(() => projectTable.projectId)
+    .notNull(),
+  screenId: varchar().notNull(),
+  screenName: varchar(),
+  purpose: varchar(),
+  screenDescription: varchar(),
+  code: text(),
 });

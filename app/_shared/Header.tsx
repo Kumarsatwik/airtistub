@@ -7,7 +7,7 @@ import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 const Header = () => {
   const { user } = useUser();
   return (
-    <div className="flex items-center justify-between p-4 relative z-10">
+    <div className="flex items-center justify-between p-4 relative z-10 bg-background">
       <div className="flex gap-2 items-center">
         <Image
           src="https://img.icons8.com/arcade/128/design.png"

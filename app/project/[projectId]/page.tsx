@@ -3,29 +3,80 @@ import axios from "axios";
 import ProjectHeader from "./_shared/ProjectHeader";
 import SettingsSection from "./_shared/SettingsSection";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ProjectType } from "@/type/types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ProjectType, ScreenConfigType } from "@/type/types";
 import { Loader2Icon } from "lucide-react";
+
+type ProjectResponse = {
+  projectDetail: ProjectType;
+  screenConfig: ScreenConfigType[];
+};
 
 const ProjectCanvasPlayground = () => {
   const { projectId } = useParams();
-  const [projectDetail, setProjectDetail] = useState<ProjectType | null>(null);
+  const projectIdValue = Array.isArray(projectId) ? projectId[0] : projectId;
+  const [, setProjectDetail] = useState<ProjectType>();
+  const [, setScreenConfig] = useState<ScreenConfigType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingMsg, setLoadingMsg] = useState("Loading");
-  useEffect(() => {
-    projectId && getProjectDetail();
-  }, [projectId]);
+  const hasFetched = useRef(false);
 
-  const getProjectDetail = async () => {
-    setLoading(true);
-    setLoadingMsg("Loading...");
-    const result = await axios.get<ProjectType>(
-      `/api/project?projectId=${projectId}`
-    );
-    console.log(result?.data);
-    setProjectDetail(result?.data);
-    setLoading(false);
-  };
+  const generateScreenConfig = useCallback(
+    async (targetProjectId: string, detail: ProjectType) => {
+      if (!detail?.deviceType || !detail?.userInput) return;
+      setLoading(true);
+      setLoadingMsg("Generating Screen config...");
+      try {
+        const result = await axios.post<ProjectResponse>(
+          "/api/generate-config",
+          {
+            projectId: targetProjectId,
+            deviceType: detail.deviceType,
+            userInput: detail.userInput,
+          }
+        );
+        console.log("Generated screen config:", result.data);
+        setProjectDetail(result.data.projectDetail);
+        setScreenConfig(result.data.screenConfig);
+      } catch (error) {
+        console.error("Error generating screen config:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  const getProjectDetail = useCallback(
+    async (targetProjectId: string) => {
+      setLoading(true);
+      setLoadingMsg("Loading...");
+      try {
+        const result = await axios.get<ProjectResponse>(
+          `/api/project?projectId=${targetProjectId}`
+        );
+        const detail = result?.data?.projectDetail;
+        const config = result?.data?.screenConfig ?? [];
+        setProjectDetail(detail);
+        setScreenConfig(config);
+        if (detail && config.length === 0) {
+          await generateScreenConfig(targetProjectId, detail);
+        }
+      } catch (error) {
+        console.error("Error fetching project detail:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [generateScreenConfig]
+  );
+
+  useEffect(() => {
+    if (!projectIdValue || hasFetched.current) return;
+    hasFetched.current = true;
+    void getProjectDetail(projectIdValue);
+  }, [projectIdValue, getProjectDetail]);
+
   return (
     <div>
       <ProjectHeader />
