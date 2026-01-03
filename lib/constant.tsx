@@ -627,16 +627,92 @@ export type Theme = (typeof THEMES)[ThemeKey];
 // Utility Functions
 
 /**
- * Validates the contrast ratio between two colors (simplified check).
- * Returns true if contrast is likely sufficient for large text.
+ * Parses a hex color string to RGB values.
+ * Supports both 3-digit (#RGB) and 6-digit (#RRGGBB) formats.
+ * Returns null if the format is invalid.
+ */
+const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+  const cleanHex = hex.replace('#', '');
+  let r: number, g: number, b: number;
+
+  if (cleanHex.length === 3) {
+    r = parseInt(cleanHex[0] + cleanHex[0], 16);
+    g = parseInt(cleanHex[1] + cleanHex[1], 16);
+    b = parseInt(cleanHex[2] + cleanHex[2], 16);
+  } else if (cleanHex.length === 6) {
+    r = parseInt(cleanHex.slice(0, 2), 16);
+    g = parseInt(cleanHex.slice(2, 4), 16);
+    b = parseInt(cleanHex.slice(4, 6), 16);
+  } else {
+    return null;
+  }
+
+  // Validate that all components are numbers
+  if (isNaN(r) || isNaN(g) || isNaN(b)) {
+    return null;
+  }
+
+  return { r, g, b };
+};
+
+/**
+ * Calculates the relative luminance of a color according to WCAG guidelines.
+ * Formula: L = 0.2126 * R + 0.7152 * G + 0.0722 * B
+ * Where R, G, B are adjusted for gamma correction.
+ */
+const getRelativeLuminance = (r: number, g: number, b: number): number => {
+  // Normalize to 0-1 range
+  const normalize = (channel: number) => {
+    channel = channel / 255;
+    return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+  };
+
+  const rNorm = normalize(r);
+  const gNorm = normalize(g);
+  const bNorm = normalize(b);
+
+  return 0.2126 * rNorm + 0.7152 * gNorm + 0.0722 * bNorm;
+};
+
+/**
+ * Calculates the contrast ratio between two colors according to WCAG guidelines.
+ * Formula: (L1 + 0.05) / (L2 + 0.05) where L1 is the lighter color.
+ */
+const getContrastRatio = (color1: string, color2: string): number | null => {
+  const rgb1 = hexToRgb(color1);
+  const rgb2 = hexToRgb(color2);
+
+  if (!rgb1 || !rgb2) {
+    return null;
+  }
+
+  const lum1 = getRelativeLuminance(rgb1.r, rgb1.g, rgb1.b);
+  const lum2 = getRelativeLuminance(rgb2.r, rgb2.g, rgb2.b);
+
+  const lighter = Math.max(lum1, lum2);
+  const darker = Math.min(lum1, lum2);
+
+  return (lighter + 0.05) / (darker + 0.05);
+};
+
+/**
+ * Validates the contrast ratio between two colors according to WCAG guidelines.
+ * Returns true if the contrast ratio meets or exceeds the specified threshold.
+ * Default threshold is 3.0 (suitable for large text, 18pt+ or 14pt+ bold).
+ * For normal text, use threshold 4.5. For enhanced contrast, use 7.0.
+ *
+ * @param background - Background color as hex string (#RGB or #RRGGBB)
+ * @param foreground - Foreground color as hex string (#RGB or #RRGGBB)
+ * @param threshold - Minimum contrast ratio required (default: 3.0)
+ * @returns true if contrast is sufficient, false if insufficient or invalid colors
  */
 export const hasSufficientContrast = (
   background: string,
-  foreground: string
+  foreground: string,
+  threshold: number = 3.0
 ): boolean => {
-  // Placeholder for real WCAG calculation
-  // In a real implementation, we would parse hex to RGB and calculate luminance
-  return Boolean(background && foreground);
+  const ratio = getContrastRatio(background, foreground);
+  return ratio !== null && ratio >= threshold;
 };
 
 /**
