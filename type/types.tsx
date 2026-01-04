@@ -1,6 +1,6 @@
 export const DeviceType = {
   mobile: "mobile",
-  web: "website",
+  website: "website",
 };
 
 export type ProjectType = {
