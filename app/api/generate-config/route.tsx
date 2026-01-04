@@ -111,14 +111,15 @@ export async function POST(req: NextRequest) {
 
   let result;
   try {
+    const normalizedDeviceType = normalizeDeviceTypeForPrompt(deviceType);
     result = await openrouter.chat.send({
       model: "mistralai/devstral-2512:free",
       messages: [
         {
           role: "system",
-          content: APP_LAYOUT_CONFIG_PROMPT.replace(
+          content: APP_LAYOUT_CONFIG_PROMPT.replaceAll(
             "{deviceType}",
-            normalizeDeviceTypeForPrompt(deviceType)
+            normalizedDeviceType
           ),
         },
         {
@@ -190,43 +191,50 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await db
-      .delete(screenConfigTable)
-      .where(eq(screenConfigTable.projectId, projectId));
+    const { insertedScreenConfig, updatedProject } = await db.transaction(
+      async (tx) => {
+        await tx
+          .delete(screenConfigTable)
+          .where(eq(screenConfigTable.projectId, projectId));
 
-    const insertedScreenConfig = await db
-      .insert(screenConfigTable)
-      .values(
-        parsedConfig.data.screens.map((screen) => ({
-          projectId,
-          screenId: screen.id,
-          screenName: screen.name,
-          purpose: screen.purpose,
-          screenDescription: screen.layoutDescription,
-        }))
-      )
-      .returning();
+        const insertedScreenConfig = await tx
+          .insert(screenConfigTable)
+          .values(
+            parsedConfig.data.screens.map((screen) => ({
+              projectId,
+              screenId: screen.id,
+              screenName: screen.name,
+              purpose: screen.purpose,
+              screenDescription: screen.layoutDescription,
+            }))
+          )
+          .returning();
 
-    const projectUpdate: Record<string, unknown> = {
-      config: parsedConfig.data,
-    };
-    if (parsedConfig.data.projectName)
-      projectUpdate.projectName = parsedConfig.data.projectName;
-    if (parsedConfig.data.theme) projectUpdate.theme = parsedConfig.data.theme;
+        const projectUpdate: Record<string, unknown> = {
+          config: parsedConfig.data,
+        };
+        if (parsedConfig.data.projectName)
+          projectUpdate.projectName = parsedConfig.data.projectName;
+        if (parsedConfig.data.theme)
+          projectUpdate.theme = parsedConfig.data.theme;
 
-    const updated = await db
-      .update(projectTable)
-      .set(projectUpdate)
-      .where(
-        and(
-          eq(projectTable.projectId, projectId),
-          eq(projectTable.userId, userId)
-        )
-      )
-      .returning();
+        const updated = await tx
+          .update(projectTable)
+          .set(projectUpdate)
+          .where(
+            and(
+              eq(projectTable.projectId, projectId),
+              eq(projectTable.userId, userId)
+            )
+          )
+          .returning();
+
+        return { insertedScreenConfig, updatedProject: updated[0] };
+      }
+    );
 
     return NextResponse.json({
-      projectDetail: updated[0] ?? projectDetail,
+      projectDetail: updatedProject ?? projectDetail,
       screenConfig: insertedScreenConfig,
     });
   } catch (error) {
