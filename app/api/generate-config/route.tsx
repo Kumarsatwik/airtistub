@@ -9,7 +9,7 @@ import { z } from "zod";
 
 const requestSchema = z.object({
   userInput: z.string().min(1),
-  deviceType: z.enum(["mobile", "website"]).or(z.string().min(1)),
+  deviceType: z.enum(["mobile", "website"]),
   projectId: z.string().min(1).optional(),
 });
 
@@ -49,9 +49,9 @@ function extractFirstJsonObject(text: string): string | null {
 
 function normalizeDeviceTypeForPrompt(deviceType: string) {
   const normalized = deviceType.trim().toLowerCase();
-  if (normalized === "mobile") return "Mobile";
-  if (normalized === "website" || normalized === "web") return "Website";
-  return deviceType;
+  if (normalized === "mobile") return "mobile";
+  if (normalized === "website" || normalized === "web") return "website";
+  return normalized;
 }
 
 export async function POST(req: NextRequest) {
