@@ -41,7 +41,14 @@ const modelConfigSchema = z
       )
       .min(1),
   })
-  .passthrough();
+
+type ChatSendResult = {
+  choices?: Array<{
+    message?: {
+      content?: unknown;
+    };
+  }>;
+};
 
 /**
  * Extracts the first valid JSON object from text, handling both fenced code blocks and raw JSON
@@ -65,16 +72,32 @@ function extractFirstJsonObject(text: string): string | null {
   return trimmed.slice(first, last + 1);
 }
 
-/**
- * Normalizes device type input for use in AI prompts
- * @param deviceType - Raw device type string
- * @returns Normalized device type ("mobile" or "website")
- */
-function normalizeDeviceTypeForPrompt(deviceType: string) {
-  const normalized = deviceType.trim().toLowerCase();
-  if (normalized === "mobile") return "mobile";
-  if (normalized === "website" || normalized === "web") return "website";
-  return normalized;
+function contentToText(content: unknown): string | null {
+  if (typeof content === "string") return content;
+
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (!part || typeof part !== "object") return "";
+        const maybe = part as { type?: unknown; text?: unknown };
+        if (maybe.type !== "text") return "";
+        return typeof maybe.text === "string" ? maybe.text : "";
+      })
+      .join("");
+  }
+
+  return null;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error("Request timeout")), ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) clearTimeout(timeoutId);
+  });
 }
 
 /**
@@ -105,8 +128,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Validate request body schema
-  const bodyResult = requestSchema.safeParse(await req.json());
+  let jsonBody: unknown;
+  try {
+    jsonBody = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const bodyResult = requestSchema.safeParse(jsonBody);
   if (!bodyResult.success) {
     return NextResponse.json(
       { error: "Invalid request body", issues: bodyResult.error.issues },
@@ -116,94 +145,74 @@ export async function POST(req: NextRequest) {
 
   const { userInput, deviceType, projectId } = bodyResult.data;
 
-  // If projectId provided, verify project exists and belongs to user
-  let projectDetail:
-    | (typeof projectTable.$inferSelect & { config?: unknown })
-    | undefined;
-
   if (projectId) {
     const existingProject = await db
-      .select()
+      .select({ projectId: projectTable.projectId })
       .from(projectTable)
       .where(
         and(
           eq(projectTable.projectId, projectId),
           eq(projectTable.userId, userId)
         )
-      );
+      )
+      .limit(1);
 
     if (!existingProject[0]) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
-
-    projectDetail = existingProject[0];
   }
 
-  // Retry loop for AI config generation with validation
-  // Allows up to 3 attempts: original + 2 retries with error feedback
   const maxAttempts = 3;
-  let attempts = 0;
-  let parsedConfig;
+  const systemPrompt = APP_LAYOUT_CONFIG_PROMPT.replaceAll(
+    "{deviceType}",
+    deviceType
+  );
+
+  let validatedConfig: z.infer<typeof modelConfigSchema> | null = null;
   let lastError: string | null = null;
 
-  do {
-    // Prepare user input - use original for first attempt, error feedback for retries
-    let currentUserInput = userInput;
-    if (attempts > 0 && lastError) {
-      currentUserInput = `The previous attempt generated invalid config JSON. Here are the validation errors: ${lastError}
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const currentUserInput =
+      attempt === 1 || !lastError
+        ? userInput
+        : `The previous attempt generated invalid config JSON. Here are the validation errors: ${lastError}
 
 Original request: ${userInput}
 
 Please regenerate a valid config JSON that matches the required schema with proper structure, types, and required fields.`;
-    }
 
-    // Call AI model to generate config
-    let result;
+    let result: ChatSendResult;
     try {
-      const normalizedDeviceType = normalizeDeviceTypeForPrompt(deviceType);
-      result = await openrouter.chat.send({
-        model: "openai/gpt-oss-20b:free",
-        messages: [
-          {
-            role: "system",
-            content: APP_LAYOUT_CONFIG_PROMPT.replaceAll(
-              "{deviceType}",
-              normalizedDeviceType
-            ),
-          },
-          {
-            role: "user",
-            content: currentUserInput,
-          },
-        ],
-      });
+      result = (await withTimeout(
+        openrouter.chat.send({
+          model: "openai/gpt-oss-20b:free",
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt,
+            },
+            {
+              role: "user",
+              content: currentUserInput,
+            },
+          ],
+        }),
+        45000
+      )) as ChatSendResult;
+
+      if (!result?.choices?.[0]?.message) {
+        throw new Error("Invalid response structure from AI model");
+      }
     } catch (error) {
-      console.error(error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       return NextResponse.json(
-        { error: "Failed to generate config" },
+        { error: "AI model failed to generate config", details: errorMessage },
         { status: 502 }
       );
     }
 
-    // Extract text content from AI response
-    const content = result?.choices?.[0]?.message?.content;
-    console.log("generate config", content);
-    const text =
-      typeof content === "string"
-        ? content
-        : Array.isArray(content)
-        ? content
-            .map((part) => {
-              if (!part || typeof part !== "object") return "";
-              const typedPart = part as { type?: unknown; text?: unknown };
-              return typedPart.type === "text" &&
-                typeof typedPart.text === "string"
-                ? typedPart.text
-                : "";
-            })
-            .join("")
-        : null;
-
+    const text = contentToText(result.choices?.[0]?.message?.content);
     if (!text) {
       return NextResponse.json(
         { error: "No content returned from model" },
@@ -211,53 +220,38 @@ Please regenerate a valid config JSON that matches the required schema with prop
       );
     }
 
-    // Extract JSON from AI response text
     const jsonText = extractFirstJsonObject(text);
     if (!jsonText) {
-      if (attempts === maxAttempts - 1) {
-        return NextResponse.json(
-          { error: "Model returned invalid JSON after retries" },
-          { status: 502 }
-        );
-      }
-      attempts++;
+      lastError = "No JSON object found in model output";
       continue;
     }
 
-    // Parse extracted JSON
     let parsedJson: unknown;
     try {
       parsedJson = JSON.parse(jsonText);
     } catch {
-      if (attempts === maxAttempts - 1) {
-        return NextResponse.json(
-          { error: "Model returned invalid JSON after retries" },
-          { status: 502 }
-        );
-      }
-      attempts++;
+      lastError = "Failed to parse JSON from model output";
       continue;
     }
 
-    // Validate parsed JSON against schema
-    parsedConfig = modelConfigSchema.safeParse(parsedJson);
-    if (!parsedConfig.success) {
-      lastError = JSON.stringify(parsedConfig.error.issues);
-      attempts++;
+    const validation = modelConfigSchema.safeParse(parsedJson);
+    if (validation.success) {
+      validatedConfig = validation.data;
+      break;
     }
-  } while (!parsedConfig?.success && attempts < maxAttempts);
 
-  // If all retries failed, return error
-  if (!parsedConfig?.success) {
+    lastError = JSON.stringify(validation.error.issues);
+  }
+
+  if (!validatedConfig) {
     return NextResponse.json(
       { error: "Generated config failed validation after retries" },
       { status: 502 }
     );
   }
 
-  // If no projectId, return config without persistence
   if (!projectId) {
-    return NextResponse.json({ config: parsedConfig.data });
+    return NextResponse.json({ config: validatedConfig });
   }
 
   // Persist validated config to database
@@ -272,7 +266,7 @@ Please regenerate a valid config JSON that matches the required schema with prop
     const insertedScreenConfig = await db
       .insert(screenConfigTable)
       .values(
-        parsedConfig.data.screens.map((screen) => ({
+        validatedConfig.screens.map((screen) => ({
           projectId,
           screenId: screen.id,
           screenName: screen.name,
@@ -284,7 +278,7 @@ Please regenerate a valid config JSON that matches the required schema with prop
 
     // Separate table fields from config to avoid duplication
     const { projectName, theme, projectVisualDescription, screens } =
-      parsedConfig.data;
+      validatedConfig;
 
     // Update project record with table fields and cleaned config
     const projectUpdate: Record<string, unknown> = {
