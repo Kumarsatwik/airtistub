@@ -3,7 +3,7 @@
  * Handles config generation, validation with retries, and database persistence
  */
 
-import { openrouter } from "@/config/openrouter";
+import { API_CALL } from "@/config/openrouter";
 import { db } from "@/config/db";
 import { projectTable, screenConfigTable } from "@/config/schema";
 import { APP_LAYOUT_CONFIG_PROMPT } from "@/lib/prompt";
@@ -25,22 +25,21 @@ const requestSchema = z.object({
  * Schema for validating AI-generated config JSON
  * Uses passthrough to allow additional properties beyond the core requirements
  */
-const modelConfigSchema = z
-  .object({
-    projectName: z.string().min(1).optional(),
-    theme: z.string().min(1).optional(),
-    projectVisualDescription: z.string().min(1).optional(),
-    screens: z
-      .array(
-        z.object({
-          id: z.string().min(1),
-          name: z.string().min(1),
-          purpose: z.string().min(1),
-          layoutDescription: z.string().min(1),
-        })
-      )
-      .min(1),
-  })
+const modelConfigSchema = z.object({
+  projectName: z.string().min(1).optional(),
+  theme: z.string().min(1).optional(),
+  projectVisualDescription: z.string().min(1).optional(),
+  screens: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        purpose: z.string().min(1),
+        layoutDescription: z.string().min(1),
+      })
+    )
+    .min(1),
+});
 
 type ChatSendResult = {
   choices?: Array<{
@@ -105,13 +104,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number) {
  * Implements retry logic for AI validation failures and handles database persistence
  */
 export async function POST(req: NextRequest) {
-  // Validate API key configuration
-  if (!process.env.OPENROUTER_API_KEY) {
-    return NextResponse.json(
-      { error: "OPENROUTER_API_KEY is not configured" },
-      { status: 500 }
-    );
-  }
 
   // Authenticate user via Clerk
   const user = await currentUser();
@@ -183,24 +175,14 @@ Please regenerate a valid config JSON that matches the required schema with prop
 
     let result: ChatSendResult;
     try {
-      result = (await withTimeout(
-        openrouter.chat.send({
-          model: "openai/gpt-oss-20b:free",
-          messages: [
-            {
-              role: "system",
-              content: systemPrompt,
-            },
-            {
-              role: "user",
-              content: currentUserInput,
-            },
-          ],
-        }),
-        45000
-      )) as ChatSendResult;
+      result = await API_CALL(
+        systemPrompt,
+        currentUserInput,
+        "gpt-oss-120b",
+        "cerebras"
+      );
 
-      if (!result?.choices?.[0]?.message) {
+      if (!result) {
         throw new Error("Invalid response structure from AI model");
       }
     } catch (error) {
@@ -212,7 +194,7 @@ Please regenerate a valid config JSON that matches the required schema with prop
       );
     }
 
-    const text = contentToText(result.choices?.[0]?.message?.content);
+    const text = contentToText(result);
     if (!text) {
       return NextResponse.json(
         { error: "No content returned from model" },
