@@ -11,14 +11,20 @@ import {
 } from "@/components/ui/select";
 import { THEME_NAME_LIST, THEMES } from "@/lib/constant";
 import { Camera, Share, Sparkle } from "lucide-react";
+import { ProjectType } from "@/type/types";
 
-const SettingsSection = () => {
+type Props = {
+  projectDetail: ProjectType | undefined;
+};
+
+const SettingsSection = ({ projectDetail }: Props) => {
   const [selectedTheme, setSelectedTheme] = useState<
     (typeof THEME_NAME_LIST)[number]
   >(THEME_NAME_LIST[0]);
 
-  const [projectName, setProjectName] = useState("");
+  const [draftProjectName, setDraftProjectName] = useState<string | null>(null);
   const [userNewScreenInput, setUserNewScreenInput] = useState<string>("");
+  const projectName = draftProjectName ?? projectDetail?.projectName ?? "";
 
   return (
     <div className="w-1/4 h-[90vh] border-r p-4 flex flex-col gap-6">
@@ -31,7 +37,7 @@ const SettingsSection = () => {
         <Input
           placeholder="Enter project name"
           value={projectName}
-          onChange={(event) => setProjectName(event.target.value)}
+          onChange={(event) => setDraftProjectName(event.target.value)}
         />
       </div>
 
