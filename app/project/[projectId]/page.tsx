@@ -16,91 +16,166 @@ const ProjectCanvasPlayground = () => {
   const { projectId } = useParams();
   const projectIdValue = Array.isArray(projectId) ? projectId[0] : projectId;
   const [projectDetail, setProjectDetail] = useState<ProjectType>();
-  const [loading, setLoading] = useState<boolean>(false);
-  const [loadingMsg, setLoadingMsg] = useState("Loading");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingMsg, setLoadingMsg] = useState("Loading project...");
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const loadingStartRef = useRef<number | null>(null);
   const loadingStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+  const [, setScreenConfig] = useState<ScreenConfigType[]>([]);
 
-  const loadProject = useCallback(async (targetProjectId: string) => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    if (loadingStopTimerRef.current) {
-      clearTimeout(loadingStopTimerRef.current);
-      loadingStopTimerRef.current = null;
-    }
+  const generateScreenUIUX = useCallback(
+    async ({
+      screens,
+      projectId,
+      signal,
+      projectVisualDescription,
+    }: {
+      screens: ScreenConfigType[];
+      projectId: string;
+      signal: AbortSignal;
+      projectVisualDescription?: string;
+    }) => {
+      for (const screen of screens) {
+        if (screen.code) continue;
 
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+        setLoadingMsg(`Generating screen UI/UX for ${screen.screenName}...`);
+        const result = await axios.post<string>(
+          "/api/generate-screen-ui",
+          {
+            projectId,
+            screenId: screen.screenId,
+            screenName: screen.screenName,
+            purpose: screen.purpose,
+            screenDescription: screen.screenDescription,
+            projectVisualDescription,
+          },
+          {
+            signal,
+            timeout: 120000,
+          }
+        );
 
-    loadingStartRef.current = Date.now();
-    setLoading(true);
-    setError(null);
-    setLoadingMsg("Loading project...");
-
-    try {
-      const projectRes = await axios.get<ProjectResponse>(
-        `/api/project?projectId=${targetProjectId}`,
-        {
-          signal: controller.signal,
-          timeout: 30000,
-        }
-      );
-
-      const detail = projectRes.data?.projectDetail;
-      const existingConfig = projectRes.data?.screenConfig ?? [];
-      setProjectDetail(detail);
-
-      if (!detail || existingConfig.length > 0) return;
-      if (!detail.deviceType || !detail.userInput) return;
-
-      setLoadingMsg("Generating screen config...");
-      const generatedRes = await axios.post<ProjectResponse>(
-        "/api/generate-config",
-        {
-          projectId: targetProjectId,
-          deviceType: detail.deviceType,
-          userInput: detail.userInput,
-        },
-        {
-          signal: controller.signal,
-          timeout: 60000,
-        }
-      );
-
-      setProjectDetail(generatedRes.data.projectDetail);
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.code === "ERR_CANCELED") return;
-
-      const errorMessage = axios.isAxiosError(err)
-        ? (err.response?.data as { error?: string } | undefined)?.error ??
-          err.message
-        : "Failed to load project";
-      setError(errorMessage);
-    } finally {
-      if (abortControllerRef.current === controller) {
-        abortControllerRef.current = null;
+        const generatedCode = result.data;
+        setScreenConfig((prev) =>
+          prev.map((s) =>
+            s.screenId === screen.screenId ? { ...s, code: generatedCode } : s
+          )
+        );
       }
-      const minVisibleMs = 600;
-      const startedAt = loadingStartRef.current ?? Date.now();
-      const elapsed = Date.now() - startedAt;
-      const remaining = Math.max(0, minVisibleMs - elapsed);
+    },
+    []
+  );
 
-      if (remaining === 0) {
-        setLoading(false);
-        return;
+  const loadProject = useCallback(
+    async (targetProjectId: string) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-
-      loadingStopTimerRef.current = setTimeout(() => {
+      if (loadingStopTimerRef.current) {
+        clearTimeout(loadingStopTimerRef.current);
         loadingStopTimerRef.current = null;
-        setLoading(false);
-      }, remaining);
-    }
-  }, []);
+      }
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      loadingStartRef.current = Date.now();
+      setLoading(true);
+      setError(null);
+      setLoadingMsg("Loading project...");
+
+      try {
+        const projectRes = await axios.get<ProjectResponse>(
+          `/api/project?projectId=${targetProjectId}`,
+          {
+            signal: controller.signal,
+            timeout: 30000,
+          }
+        );
+
+        const detail = projectRes.data?.projectDetail;
+        const existingConfig = projectRes.data?.screenConfig ?? [];
+        setProjectDetail(detail);
+        setScreenConfig(existingConfig);
+
+        if (!detail) return;
+
+        if (existingConfig.length === 0) {
+          if (!detail.deviceType || !detail.userInput) return;
+
+          setLoadingMsg("Generating screen config...");
+          const generatedRes = await axios.post<ProjectResponse>(
+            "/api/generate-config",
+            {
+              projectId: targetProjectId,
+              deviceType: detail.deviceType,
+              userInput: detail.userInput,
+            },
+            {
+              signal: controller.signal,
+              timeout: 60000,
+            }
+          );
+
+          const updatedDetail = generatedRes.data.projectDetail;
+          const updatedScreens = generatedRes.data.screenConfig ?? [];
+          setProjectDetail(updatedDetail);
+          setScreenConfig(updatedScreens);
+
+          if (updatedScreens.some((s) => !s.code)) {
+            await generateScreenUIUX({
+              screens: updatedScreens,
+              projectId: targetProjectId,
+              signal: controller.signal,
+              projectVisualDescription: updatedDetail.projectVisualDescription,
+            });
+          }
+
+          return;
+        }
+
+        const missingCodeScreens = existingConfig.filter((s) => !s.code);
+        if (missingCodeScreens.length === 0) return;
+
+        await generateScreenUIUX({
+          screens: missingCodeScreens,
+          projectId: targetProjectId,
+          signal: controller.signal,
+          projectVisualDescription: detail.projectVisualDescription,
+        });
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.code === "ERR_CANCELED") return;
+
+        const errorMessage = axios.isAxiosError(err)
+          ? (err.response?.data as { error?: string } | undefined)?.error ??
+            err.message
+          : "Failed to load project";
+        setError(errorMessage);
+      } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
+
+        const minVisibleMs = 600;
+        const startedAt = loadingStartRef.current ?? Date.now();
+        const elapsed = Date.now() - startedAt;
+        const remaining = Math.max(0, minVisibleMs - elapsed);
+
+        if (remaining === 0) {
+          setLoading(false);
+        } else {
+          loadingStopTimerRef.current = setTimeout(() => {
+            loadingStopTimerRef.current = null;
+            setLoading(false);
+          }, remaining);
+        }
+      }
+    },
+    [generateScreenUIUX]
+  );
 
   // Manual retry function
   const handleRetry = useCallback(() => {
@@ -123,7 +198,10 @@ const ProjectCanvasPlayground = () => {
   }, []);
 
   useEffect(() => {
-    if (!projectIdValue) return;
+    if (!projectIdValue) {
+      setLoading(false);
+      return;
+    }
     void loadProject(projectIdValue);
   }, [projectIdValue, loadProject]);
 
