@@ -16,19 +16,11 @@ You will receive:
 ────────────────────────────────────────
 OUTPUT JSON SHAPE (TOP LEVEL)
 ────────────────────────────────────────
-{
-  "projectName": string,
-  "theme": string,
-  "projectVisualDescription": string,
-  "screens": [
-    {
-      "id": string,
-      "name": string,
-      "purpose": string,
-      "layoutDescription": string
-    }
-  ]
-}
+projectName: string
+theme: "one of ${THEME_NAME_LIST}"
+projectVisualDescription: string
+screens[1]{id,name,purpose,layoutDescription}:
+  string,string,string,string
 
 ────────────────────────────────────────
 SCREEN COUNT RULES
