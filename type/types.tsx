@@ -11,6 +11,8 @@ export type ProjectType = {
   createdOn: string;
   projectName?: string;
   theme?: string;
+  projectVisualDescription?: string;
+  config?: unknown;
 };
 
 export type ScreenConfigType = {
