@@ -624,45 +624,51 @@ export const THEME_NAME_LIST = [
 export type ThemeKey = keyof typeof THEMES;
 export type Theme = (typeof THEMES)[ThemeKey];
 
-export function themeToCssVars(theme: any) {
+export function themeToCssVars(theme: Theme | string | undefined): string {
+  if (!theme) {
+    return '';
+  }
+
+  const resolvedTheme: Theme | undefined = typeof theme === 'string' ? THEMES[theme as ThemeKey] : theme;
+
   return `
   :root {
-    --background: ${theme.background};
-    --foreground: ${theme.foreground};
-  
-    --card: ${theme.card};
-    --card-foreground: ${theme.cardForeground};
-  
-    --popover: ${theme.popover};
-    --popover-foreground: ${theme.popoverForeground};
-  
-    --primary: ${theme.primary};
-    --primary-rgb: ${theme.primaryRgb};
-    --primary-foreground: ${theme.primaryForeground};
-  
-    --secondary: ${theme.secondary};
-    --secondary-foreground: ${theme.secondaryForeground};
-  
-    --muted: ${theme.muted};
-    --muted-foreground: ${theme.mutedForeground};
-  
-    --accent: ${theme.accent};
-    --accent-foreground: ${theme.accentForeground};
-  
-    --destructive: ${theme.destructive};
-  
-    --border: ${theme.border};
-    --input: ${theme.input};
-    --ring: ${theme.ring};
-  
-    --radius: ${theme.radius};
-  
+    --background: ${resolvedTheme?.background ?? ''};
+    --foreground: ${resolvedTheme?.foreground ?? ''};
+
+    --card: ${resolvedTheme?.card ?? ''};
+    --card-foreground: ${resolvedTheme?.cardForeground ?? ''};
+
+    --popover: ${resolvedTheme?.popover ?? ''};
+    --popover-foreground: ${resolvedTheme?.popoverForeground ?? ''};
+
+    --primary: ${resolvedTheme?.primary ?? ''};
+    --primary-rgb: ${resolvedTheme?.primaryRgb ?? ''};
+    --primary-foreground: ${resolvedTheme?.primaryForeground ?? ''};
+
+    --secondary: ${resolvedTheme?.secondary ?? ''};
+    --secondary-foreground: ${resolvedTheme?.secondaryForeground ?? ''};
+
+    --muted: ${resolvedTheme?.muted ?? ''};
+    --muted-foreground: ${resolvedTheme?.mutedForeground ?? ''};
+
+    --accent: ${resolvedTheme?.accent ?? ''};
+    --accent-foreground: ${resolvedTheme?.accentForeground ?? ''};
+
+    --destructive: ${resolvedTheme?.destructive ?? ''};
+
+    --border: ${resolvedTheme?.border ?? ''};
+    --input: ${resolvedTheme?.input ?? ''};
+    --ring: ${resolvedTheme?.ring ?? ''};
+
+    --radius: ${resolvedTheme?.radius ?? ''};
+
     /* charts */
-    --chart-1: ${theme.chart?.[0]};
-    --chart-2: ${theme.chart?.[1]};
-    --chart-3: ${theme.chart?.[2]};
-    --chart-4: ${theme.chart?.[3]};
-    --chart-5: ${theme.chart?.[4]};
+    --chart-1: ${resolvedTheme?.chart?.[0] ?? ''};
+    --chart-2: ${resolvedTheme?.chart?.[1] ?? ''};
+    --chart-3: ${resolvedTheme?.chart?.[2] ?? ''};
+    --chart-4: ${resolvedTheme?.chart?.[3] ?? ''};
+    --chart-5: ${resolvedTheme?.chart?.[4] ?? ''};
   }
   `;
 }
