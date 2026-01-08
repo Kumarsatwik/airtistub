@@ -624,6 +624,49 @@ export const THEME_NAME_LIST = [
 export type ThemeKey = keyof typeof THEMES;
 export type Theme = (typeof THEMES)[ThemeKey];
 
+export function themeToCssVars(theme: any) {
+  return `
+  :root {
+    --background: ${theme.background};
+    --foreground: ${theme.foreground};
+  
+    --card: ${theme.card};
+    --card-foreground: ${theme.cardForeground};
+  
+    --popover: ${theme.popover};
+    --popover-foreground: ${theme.popoverForeground};
+  
+    --primary: ${theme.primary};
+    --primary-rgb: ${theme.primaryRgb};
+    --primary-foreground: ${theme.primaryForeground};
+  
+    --secondary: ${theme.secondary};
+    --secondary-foreground: ${theme.secondaryForeground};
+  
+    --muted: ${theme.muted};
+    --muted-foreground: ${theme.mutedForeground};
+  
+    --accent: ${theme.accent};
+    --accent-foreground: ${theme.accentForeground};
+  
+    --destructive: ${theme.destructive};
+  
+    --border: ${theme.border};
+    --input: ${theme.input};
+    --ring: ${theme.ring};
+  
+    --radius: ${theme.radius};
+  
+    /* charts */
+    --chart-1: ${theme.chart?.[0]};
+    --chart-2: ${theme.chart?.[1]};
+    --chart-3: ${theme.chart?.[2]};
+    --chart-4: ${theme.chart?.[3]};
+    --chart-5: ${theme.chart?.[4]};
+  }
+  `;
+}
+
 // Utility Functions
 
 /**
@@ -632,7 +675,7 @@ export type Theme = (typeof THEMES)[ThemeKey];
  * Returns null if the format is invalid.
  */
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
-  const cleanHex = hex.replace('#', '');
+  const cleanHex = hex.replace("#", "");
   let r: number, g: number, b: number;
 
   if (cleanHex.length === 3) {
@@ -664,7 +707,9 @@ const getRelativeLuminance = (r: number, g: number, b: number): number => {
   // Normalize to 0-1 range
   const normalize = (channel: number) => {
     channel = channel / 255;
-    return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+    return channel <= 0.03928
+      ? channel / 12.92
+      : Math.pow((channel + 0.055) / 1.055, 2.4);
   };
 
   const rNorm = normalize(r);
