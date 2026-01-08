@@ -88,17 +88,6 @@ function contentToText(content: unknown): string | null {
   return null;
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number) {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error("Request timeout")), ms);
-  });
-
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timeoutId) clearTimeout(timeoutId);
-  });
-}
-
 /**
  * POST handler for generating app layout configurations
  * Implements retry logic for AI validation failures and handles database persistence
