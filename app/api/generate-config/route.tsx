@@ -41,14 +41,6 @@ const modelConfigSchema = z.object({
     .min(1),
 });
 
-type ChatSendResult = {
-  choices?: Array<{
-    message?: {
-      content?: unknown;
-    };
-  }>;
-};
-
 /**
  * Extracts the first valid JSON object from text, handling both fenced code blocks and raw JSON
  * @param text - Raw text response from AI model
@@ -162,7 +154,7 @@ Original request: ${userInput}
 
 Please regenerate a valid config JSON that matches the required schema with proper structure, types, and required fields.`;
 
-    let result: ChatSendResult;
+    let result: string;
     try {
       result = await API_CALL(
         systemPrompt,
