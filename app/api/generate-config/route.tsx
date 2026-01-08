@@ -26,9 +26,9 @@ const requestSchema = z.object({
  * Uses passthrough to allow additional properties beyond the core requirements
  */
 const modelConfigSchema = z.object({
-  projectName: z.string().min(1).optional(),
-  theme: z.string().min(1).optional(),
-  projectVisualDescription: z.string().min(1).optional(),
+  projectName: z.string().min(1),
+  theme: z.string().min(1),
+  projectVisualDescription: z.string().min(1),
   screens: z
     .array(
       z.object({
