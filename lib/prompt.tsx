@@ -127,7 +127,7 @@ NO markdown, NO comments, NO explanations
 NO JavaScript, NO canvas — SVG ONLY for charts
 Images rules:
 Avatars → https://i.pravatar.cc/400
-Other images → searchUnsplash ONLY
+Other images → https://source.unsplash.com/400x300/?{keyword}
 Theme variables are PREDEFINED by parent — NEVER redeclare
 Use CSS variables for foundational colors ONLY:
 bg-[var(--background)]
@@ -190,6 +190,7 @@ Donut Chart   75%
 ICONS & DATA
 ────────────────────────────────────────
 Icons:
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
 
 Use realistic real-world data ONLY:
 "8,432 steps"
@@ -241,6 +242,5 @@ Root container clean and correct?
 Proper spacing, hierarchy, and polish?
 No forbidden content?
 Generate a stunning, production-ready UI mockup.
-Start with 
-. End at last closing tag.
+Start with <!DOCTYPE html><html>. End at </html>.
 `;
