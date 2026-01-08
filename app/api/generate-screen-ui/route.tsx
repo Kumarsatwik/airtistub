@@ -32,9 +32,17 @@ function checkRateLimit(identifier: string): boolean {
 const requestSchema = z.object({
   projectId: z.string().min(1, "projectId is required"),
   screenId: z.string().min(1, "screenId is required"),
-  screenName: z.string().min(1, "screenName is required").max(100, "screenName too long"),
-  purpose: z.string().min(1, "purpose is required").max(500, "purpose too long"),
-  projectVisualDescription: z.string().min(1, "projectVisualDescription is required"),
+  screenName: z
+    .string()
+    .min(1, "screenName is required")
+    .max(100, "screenName too long"),
+  purpose: z
+    .string()
+    .min(1, "purpose is required")
+    .max(500, "purpose too long"),
+  projectVisualDescription: z
+    .string()
+    .min(1, "projectVisualDescription is required"),
   screenDescription: z.string().min(1, "screenDescription is required"),
 });
 
@@ -47,7 +55,10 @@ export async function POST(req: NextRequest) {
 
   const userId = user.emailAddresses?.[0]?.emailAddress;
   if (!userId) {
-    return NextResponse.json({ error: "User email not found" }, { status: 400 });
+    return NextResponse.json(
+      { error: "User email not found" },
+      { status: 400 }
+    );
   }
 
   // Rate limiting
@@ -96,7 +107,10 @@ export async function POST(req: NextRequest) {
     .limit(1);
 
   if (!existingProject[0]) {
-    return NextResponse.json({ error: "Project not found or access denied" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Project not found or access denied" },
+      { status: 403 }
+    );
   }
 
   const userInput = `
@@ -111,8 +125,8 @@ export async function POST(req: NextRequest) {
     const result = await API_CALL(
       GENERATION_SYSTEM_PROMPT,
       userInput,
-      "gpt-oss-120b",
-      "cerebras"
+      "mistralai/devstral-2512:free",
+      "openrouter"
     );
 
     if (typeof result !== "string") {
@@ -126,7 +140,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("API_CALL error:", error);
     return NextResponse.json(
-      { error: "Failed to generate code", details: error instanceof Error ? error.message : "Unknown error" },
+      {
+        error: "Failed to generate code",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
@@ -156,7 +173,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Database update error:", error);
     return NextResponse.json(
-      { error: "Failed to save code", details: error instanceof Error ? error.message : "Unknown error" },
+      {
+        error: "Failed to save code",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }

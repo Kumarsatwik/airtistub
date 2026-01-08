@@ -41,7 +41,7 @@ const ProjectCanvasPlayground = () => {
       for (const screen of screens) {
         if (screen.code) continue;
 
-        setLoadingMsg(`Generating screen UI/UX for ${screen.screenName}...`);
+        setLoadingMsg(`Generating UI code for ${screen.screenName}...`);
         const result = await axios.post<string>(
           "/api/generate-screen-ui",
           {
@@ -106,7 +106,7 @@ const ProjectCanvasPlayground = () => {
         if (existingConfig.length === 0) {
           if (!detail.deviceType || !detail.userInput) return;
 
-          setLoadingMsg("Generating screen config...");
+          setLoadingMsg("Generating screen configuration...");
           const generatedRes = await axios.post<ProjectResponse>(
             "/api/generate-config",
             {
@@ -210,12 +210,17 @@ const ProjectCanvasPlayground = () => {
       <ProjectHeader />
       <div>
         {loading && (
-          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-start justify-center pt-20">
-            <div className="bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-4 min-w-[200px] flex items-center gap-3">
-              <Loader2Icon className="h-5 w-5 animate-spin text-blue-600" />
-              <span className="text-md font-medium text-gray-700 dark:text-gray-300">
-                {loadingMsg}
-              </span>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-6 min-w-[300px] flex flex-col items-center gap-4">
+              <Loader2Icon className="h-8 w-8 animate-spin text-blue-600" />
+              <div className="text-center">
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100 block">
+                  {loadingMsg}
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 block mt-1">
+                  This may take a few moments...
+                </span>
+              </div>
             </div>
           </div>
         )}
