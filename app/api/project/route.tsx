@@ -111,3 +111,9 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export async function PUT(req:NextRequest){
+    const {projectName,theme,projectId}=await req.json()
+    const result = await db.update(projectTable).set({projectName,theme}).where(eq(projectTable.projectId,projectId)).returning()
+    return NextResponse.json(result[0])
+}

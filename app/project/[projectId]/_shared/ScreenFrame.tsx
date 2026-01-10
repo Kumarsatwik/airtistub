@@ -3,7 +3,8 @@ import { Rnd } from "react-rnd";
 import { ProjectType, ScreenConfigType } from "@/type/types";
 import { THEMES, themeToCssVars } from "@/lib/constant";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { SettingContext } from "@/context/SettingContext";
 
 type Props = {
   x: number;
@@ -24,8 +25,10 @@ const ScreenFrame = ({
   screen,
   projectDetail,
 }: Props) => {
+
+  const {settingDetail,setSettingDetail}=useContext(SettingContext)
   // @ts-ignore
-  const theme = THEMES[projectDetail?.theme ?? ""];
+  const theme = THEMES[settingDetail?.theme ?? projectDetail?.theme ];
   const iframeRef=useRef<HTMLIFrameElement|null>(null)
   const html = `
     <!doctype html>
@@ -81,7 +84,7 @@ const ScreenFrame = ({
     }
   </script>
   <style>
-    ${themeToCssVars(projectDetail?.theme ?? "")}
+    ${themeToCssVars(theme)}
     body { font-family: 'Inter', sans-serif; }
   </style>
     </head>
@@ -196,11 +199,11 @@ useEffect(() => {
       onResizeStart={() => {
         setPanningEnabled(false);
       }}
-      onResizeStop={() => {
+      onResizeStop={(_,__,ref,___,position) => {
         setPanningEnabled(true);
         setSize({
-          width,
-          height
+          width:ref.offsetWidth,
+          height:ref.offsetHeight
         })
       }}
     >

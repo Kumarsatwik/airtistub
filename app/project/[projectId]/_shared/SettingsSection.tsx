@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,20 +12,30 @@ import {
 import { THEME_NAME_LIST, THEMES } from "@/lib/constant";
 import { Camera, Share, Sparkle } from "lucide-react";
 import { ProjectType } from "@/type/types";
+import { SettingContext } from "@/context/SettingContext";
 
 type Props = {
   projectDetail: ProjectType | undefined;
 };
 
 const SettingsSection = ({ projectDetail }: Props) => {
-  const [selectedTheme, setSelectedTheme] = useState<
-    (typeof THEME_NAME_LIST)[number]
-  >(THEME_NAME_LIST[0]);
+  const [selectedTheme, setSelectedTheme] = useState<(typeof THEME_NAME_LIST)[number]>(THEME_NAME_LIST[0]);
 
   const [draftProjectName, setDraftProjectName] = useState<string | null>(null);
   const [userNewScreenInput, setUserNewScreenInput] = useState<string>("");
-  const projectName = draftProjectName ?? projectDetail?.projectName ?? "";
+  const {setSettingDetail}=useContext(SettingContext);
 
+  useEffect(()=>{
+    projectDetail && setDraftProjectName(projectDetail.projectName ?? null)
+    if (projectDetail?.theme) {
+      setSelectedTheme(projectDetail.theme as (typeof THEME_NAME_LIST)[number]);
+    }
+  },[projectDetail])
+
+  const onThemeSelect=(theme: (typeof THEME_NAME_LIST)[number])=>{
+    setSelectedTheme(theme)
+    setSettingDetail((prev:any)=>({...prev,theme}));
+  }
   return (
     <div className="w-1/4 h-[90vh] border-r p-4 flex flex-col gap-6">
       <h2 className="font-semibold text-xl tracking-tight">Settings</h2>
@@ -36,8 +46,10 @@ const SettingsSection = ({ projectDetail }: Props) => {
         </h3>
         <Input
           placeholder="Enter project name"
-          value={projectName}
-          onChange={(event) => setDraftProjectName(event.target.value)}
+          value={draftProjectName ?? ""}
+          onChange={(event) => {
+            setDraftProjectName(event.target.value) 
+            setSettingDetail((prev:any)=>({...prev,projectName:draftProjectName})); }}
         />
       </div>
 
@@ -62,7 +74,7 @@ const SettingsSection = ({ projectDetail }: Props) => {
         <Select
           value={selectedTheme}
           onValueChange={(value) =>
-            setSelectedTheme(value as (typeof THEME_NAME_LIST)[number])
+            onThemeSelect(value as (typeof THEME_NAME_LIST)[number])
           }
         >
           <SelectTrigger className="w-full">
