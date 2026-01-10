@@ -3,10 +3,11 @@ import axios from "axios";
 import ProjectHeader from "./_shared/ProjectHeader";
 import SettingsSection from "./_shared/SettingsSection";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ProjectType, ScreenConfigType } from "@/type/types";
 import { Loader2Icon, AlertCircle, RefreshCw } from "lucide-react";
 import Canvas from "./_shared/Canvas";
+import { SettingContext } from "@/context/SettingContext";
 
 type ProjectResponse = {
   projectDetail: ProjectType;
@@ -26,7 +27,7 @@ const ProjectCanvasPlayground = () => {
     null
   );
   const [screenConfig, setScreenConfig] = useState<ScreenConfigType[]>([]);
-
+  const {settingDetail,setSettingDetail}=useContext(SettingContext);
   const generateScreenUIUX = useCallback(
     async ({
       screens,
@@ -55,7 +56,6 @@ const ProjectCanvasPlayground = () => {
           },
           {
             signal,
-            timeout: 120000,
           }
         );
 
@@ -101,6 +101,7 @@ const ProjectCanvasPlayground = () => {
         const existingConfig = projectRes.data?.screenConfig ?? [];
         setProjectDetail(detail);
         setScreenConfig(existingConfig);
+        setSettingDetail(detail);
 
         if (!detail) return;
 

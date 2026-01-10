@@ -4,11 +4,13 @@ import axios from "axios";
 import { UserDetailContext } from "@/context/UserDetailContext";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { SettingContext } from "@/context/SettingContext";
 
 const Provider = ({ children }: { children: React.ReactNode }) => {
   const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const [userDetails, setUserDetail] = useState<unknown>(null);
+  const [settingDetail,setSettingDetail]=useState<any>(null);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -50,7 +52,9 @@ const Provider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <UserDetailContext.Provider value={{ userDetails, setUserDetail }}>
+      <SettingContext.Provider value={{settingDetail,setSettingDetail}}>
       <div>{children}</div>
+      </SettingContext.Provider>
     </UserDetailContext.Provider>
   );
 };

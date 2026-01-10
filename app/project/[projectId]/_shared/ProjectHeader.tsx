@@ -1,8 +1,29 @@
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { Loader2Icon, Save } from "lucide-react";
 import Image from "next/image";
+import { useContext, useState } from "react";
+import { SettingContext } from "@/context/SettingContext";
+import axios from "axios";
+import { toast } from "sonner";
 
 const ProjectHeader = () => {
+  const {settingDetail,setSettingDetail}=useContext(SettingContext)
+  const [loading,setLoading]=useState(false)
+  const onSave = async () => {
+    setLoading(true);
+    try {
+      await axios.put('/api/project', {
+        theme: settingDetail.theme,
+        projectId: settingDetail.projectId,
+        projectName: settingDetail.projectName
+      });
+      toast.success("Project saved successfully");
+    } catch (error) {
+      toast.error("An error occurred while saving the project");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="flex gap-2 items-center justify-between p-3 shadow-md">
       <div className="flex gap-2 items-center">
@@ -14,9 +35,9 @@ const ProjectHeader = () => {
         />
         <h2 className="text-xl font-semibold">Airtistub</h2>
       </div>
-      <Button>
+      <Button onClick={onSave} disabled={loading}>
         {" "}
-        <Save /> Save
+        {loading ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <Save /> } Save
       </Button>
     </div>
   );
