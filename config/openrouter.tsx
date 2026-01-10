@@ -2,72 +2,52 @@ import { OpenRouter } from "@openrouter/sdk";
 import Cerebras from "@cerebras/cerebras_cloud_sdk";
 
 const openRouterApiKey = process.env.OPENROUTER_API_KEY?.trim();
-if (!openRouterApiKey) {
-  throw new Error("Missing OPENROUTER_API_KEY.");
-}
+if (!openRouterApiKey) throw new Error("Missing OPENROUTER_API_KEY.");
 
-export const openrouter = new OpenRouter({
-  apiKey: openRouterApiKey,
-});
+export const openrouter = new OpenRouter({ apiKey: openRouterApiKey });
 
-export const cerebrasApiKey = process.env.CEREBRAS_API_KEY?.trim();
-if (!cerebrasApiKey) {
-  throw new Error("Missing CEREBRAS_API_KEY.");
-}
+const cerebrasApiKey = process.env.CEREBRAS_API_KEY?.trim();
+if (!cerebrasApiKey) throw new Error("Missing CEREBRAS_API_KEY.");
 
-export const cerebras = new Cerebras({
-  apiKey: cerebrasApiKey,
-});
+export const cerebras = new Cerebras({ apiKey: cerebrasApiKey });
+
+type Provider = "openrouter" | "cerebras";
 
 export async function API_CALL(
   systemPrompt: string,
   userPrompt: string,
-  modelName?: string,
-  provider = "openrouter"
-) {
+  model: string = "llama-3.3-70b",
+  provider: Provider = "openrouter"
+): Promise<string> {
   try {
-    let completion;
+    const messages = [
+      { role: "system" as const, content: systemPrompt },
+      { role: "user" as const, content: userPrompt },
+    ];
+
+    let response: any;
+
     if (provider === "openrouter") {
-      completion = await openrouter.chat.send({
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        model: modelName || "llama-3.3-70b",
-      });
-    } else if (provider === "cerebras") {
-      completion = await cerebras.chat.completions.create({
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        model: modelName || "llama-3.3-70b",
+      response = await openrouter.chat.send({
+        model,
+        messages,
       });
     } else {
-      throw new Error(`Unsupported provider: ${provider}`);
+      response = await cerebras.chat.completions.create({
+        model,
+        messages,
+      });
     }
 
-    // Validate response shape and extract content based on provider
-    let content: string;
-    if (provider === "openrouter") {
-      const response = completion as unknown as { content: string; role: string };
-      if (!response || !response.content) {
-        throw new Error("Invalid response structure from OpenRouter");
-      }
-      content = response.content;
-    } else if (provider === "cerebras") {
-      const response = completion as { choices: { message: { content: string } }[] };
-      if (!response || !response.choices || !response.choices[0] || !response.choices[0].message) {
-        throw new Error("Invalid response structure from Cerebras");
-      }
-      content = response.choices[0].message.content;
-    } else {
-      throw new Error(`Unsupported provider: ${provider}`);
+    const content = response.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error(`Empty response from ${provider}`);
     }
 
     return content;
   } catch (error) {
-    console.error(`API_CALL error for provider ${provider}:`, error);
-    throw error; // Re-throw to let caller handle
+    console.error(`API_CALL failed [${provider}]:`, error);
+    throw error;
   }
 }

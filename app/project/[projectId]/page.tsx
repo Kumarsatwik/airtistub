@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ProjectType, ScreenConfigType } from "@/type/types";
 import { Loader2Icon, AlertCircle, RefreshCw } from "lucide-react";
+import Canvas from "./_shared/Canvas";
 
 type ProjectResponse = {
   projectDetail: ProjectType;
@@ -24,7 +25,7 @@ const ProjectCanvasPlayground = () => {
   const loadingStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
-  const [, setScreenConfig] = useState<ScreenConfigType[]>([]);
+  const [screenConfig, setScreenConfig] = useState<ScreenConfigType[]>([]);
 
   const generateScreenUIUX = useCallback(
     async ({
@@ -208,7 +209,7 @@ const ProjectCanvasPlayground = () => {
   return (
     <div>
       <ProjectHeader />
-      <div>
+      <div className="flex">
         {loading && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center">
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-6 min-w-[300px] flex flex-col items-center gap-4">
@@ -256,6 +257,9 @@ const ProjectCanvasPlayground = () => {
 
         {/* Settings */}
         <SettingsSection projectDetail={projectDetail} />
+
+        {/* Canvas */}
+        <Canvas projectDetail={projectDetail} screenConfig={screenConfig} />
       </div>
     </div>
   );
