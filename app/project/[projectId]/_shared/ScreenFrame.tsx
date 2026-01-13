@@ -1,7 +1,7 @@
-import { GripVertical } from "lucide-react";
+
 import { Rnd } from "react-rnd";
 import { ProjectType, ScreenConfigType } from "@/type/types";
-import { buildHtml, THEMES, themeToCssVars } from "@/lib/constant";
+import { buildHtml, THEMES } from "@/lib/constant";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { SettingContext } from "@/context/SettingContext";
@@ -15,6 +15,7 @@ type Props = {
   height: number;
   screen: ScreenConfigType;
   projectDetail: ProjectType | undefined;
+  onDeleteScreen?: (screenId: string) => void;
 };
 
 const ScreenFrame = ({
@@ -25,6 +26,7 @@ const ScreenFrame = ({
   setPanningEnabled,
   screen,
   projectDetail,
+  onDeleteScreen,
 }: Props) => {
   const { settingDetail } = useContext(SettingContext);
   const themeKey = (settingDetail?.theme ?? projectDetail?.theme) as
@@ -60,7 +62,7 @@ const ScreenFrame = ({
       const htmlEl = doc.documentElement;
       const body = doc.body;
 
-      // ✅ choose the largest plausible height
+      // choose the largest plausible height
       const contentH = Math.max(
         htmlEl?.scrollHeight ?? 0,
         body?.scrollHeight ?? 0,
@@ -86,7 +88,7 @@ const ScreenFrame = ({
     const onLoad = () => {
       measureIframeHeight();
 
-      // ✅ observe DOM changes inside iframe
+      // observe DOM changes inside iframe
       const doc = iframe.contentDocument;
       if (!doc) return;
 
@@ -98,7 +100,7 @@ const ScreenFrame = ({
         characterData: true,
       });
 
-      // ✅ re-check a few times for fonts/images/tailwind async layout
+      // re-check a few times for fonts/images/tailwind async layout
       const t1 = window.setTimeout(measureIframeHeight, 50);
       const t2 = window.setTimeout(measureIframeHeight, 200);
       const t3 = window.setTimeout(measureIframeHeight, 600);
@@ -152,7 +154,13 @@ const ScreenFrame = ({
       }}
     >
       <div className="flex items-center drag-handle cursor-move bg-white p-3 rounded-lg">
-        <ScreenHandler screen={screen} theme={theme} iframeRef={iframeRef} />
+        <ScreenHandler
+          screen={screen}
+          theme={theme}
+          iframeRef={iframeRef}
+          projectId={projectDetail?.projectId}
+          onDeleteScreen={onDeleteScreen}
+        />
       </div>
       <div className="w-full h-full bg-white mt-3">
         {screen.code ? (

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ScreenConfigType } from "@/type/types";
-import { Code2Icon, Copy, Download, GripVertical } from "lucide-react";
+import { Code2Icon, Copy, Download, GripVertical, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogClose,
@@ -12,6 +12,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -21,13 +32,22 @@ import SyntaxHighlighter from "react-syntax-highlighter";
 import { vs2015 } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { toast } from "sonner";
 import { buildHtml, type Theme } from "@/lib/constant";
+import axios from "axios";
 type Props = {
   screen: ScreenConfigType | undefined;
   theme: Theme | string | undefined;
   iframeRef: { current: HTMLIFrameElement | null };
+  projectId: string | undefined;
+  onDeleteScreen?: (screenId: string) => void;
 };
 
-const ScreenHandler = ({ screen, theme, iframeRef }: Props) => {
+const ScreenHandler = ({
+  screen,
+  theme,
+  iframeRef,
+  projectId,
+  onDeleteScreen,
+}: Props) => {
   const html = buildHtml(theme, screen?.code);
 
   const handleCopyCode = async () => {
@@ -92,6 +112,24 @@ const ScreenHandler = ({ screen, theme, iframeRef }: Props) => {
       toast.success("Downloaded image");
     } catch {
       toast.error("Failed to download image");
+    }
+  };
+
+  const handleDeleteScreen = async () => {
+    const screenId = screen?.screenId;
+    if (!projectId || !screenId) {
+      toast.error("Missing projectId or screenId");
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `/api/generate-config?projectId=${projectId}&screenId=${screenId}`
+      );
+      onDeleteScreen?.(screenId);
+      toast.success("Screen deleted successfully");
+    } catch {
+      toast.error("Failed to delete screen");
     }
   };
 
@@ -185,6 +223,40 @@ const ScreenHandler = ({ screen, theme, iframeRef }: Props) => {
                 <p>Download Image</p>
               </TooltipContent>
             </Tooltip>
+
+            <AlertDialog>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant={"ghost"}
+                      disabled={!projectId || !screen?.screenId}
+                      className="bg-gray-100 hover:bg-gray-200 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete Screen</p>
+                </TooltipContent>
+              </Tooltip>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this screen?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete{" "}
+                    {screen?.screenName || "this screen"}.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteScreen}>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </TooltipProvider>
       </div>

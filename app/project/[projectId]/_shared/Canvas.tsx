@@ -12,9 +12,10 @@ type Props = {
   projectDetail: ProjectType | undefined;
   screenConfig: ScreenConfigType[];
   loading?: boolean;
+  onDeleteScreen?: (screenId: string) => void;
 };
 
-const Canvas = ({ projectDetail, screenConfig }: Props) => {
+const Canvas = ({ projectDetail, screenConfig, onDeleteScreen }: Props) => {
   const [panningEnabled, setPanningEnabled] = useState(true);
   const isMobile = projectDetail?.deviceType === "mobile";
   const Controls = () => {
@@ -95,6 +96,7 @@ const Canvas = ({ projectDetail, screenConfig }: Props) => {
                   setPanningEnabled={setPanningEnabled}
                   screen={screen}
                   projectDetail={projectDetail}
+                  onDeleteScreen={onDeleteScreen}
                 />
               ))}
             </TransformComponent>

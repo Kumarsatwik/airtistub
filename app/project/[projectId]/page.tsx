@@ -260,7 +260,13 @@ const ProjectCanvasPlayground = () => {
         <SettingsSection projectDetail={projectDetail} />
 
         {/* Canvas */}
-        <Canvas projectDetail={projectDetail} screenConfig={screenConfig} />
+        <Canvas
+          projectDetail={projectDetail}
+          screenConfig={screenConfig}
+          onDeleteScreen={(screenId) => {
+            setScreenConfig((prev) => prev.filter((s) => s.screenId !== screenId));
+          }}
+        />
       </div>
     </div>
   );
