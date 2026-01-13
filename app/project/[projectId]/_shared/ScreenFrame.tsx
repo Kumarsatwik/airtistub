@@ -26,9 +26,11 @@ const ScreenFrame = ({
   screen,
   projectDetail,
 }: Props) => {
-  const { settingDetail, setSettingDetail } = useContext(SettingContext);
-  // @ts-ignore
-  const theme = THEMES[settingDetail?.theme ?? projectDetail?.theme];
+  const { settingDetail } = useContext(SettingContext);
+  const themeKey = (settingDetail?.theme ?? projectDetail?.theme) as
+    | keyof typeof THEMES
+    | undefined;
+  const theme = themeKey ? THEMES[themeKey] : undefined;
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const html = buildHtml(theme, screen?.code);
 
@@ -38,9 +40,11 @@ const ScreenFrame = ({
   });
 
   useEffect(() => {
-    setSize({
-      width,
-      height,
+    queueMicrotask(() => {
+      setSize({
+        width,
+        height,
+      });
     });
   }, [width, height]);
 
