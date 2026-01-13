@@ -626,49 +626,50 @@ export type Theme = (typeof THEMES)[ThemeKey];
 
 export function themeToCssVars(theme: Theme | string | undefined): string {
   if (!theme) {
-    return '';
+    return "";
   }
 
-  const resolvedTheme: Theme | undefined = typeof theme === 'string' ? THEMES[theme as ThemeKey] : theme;
+  const resolvedTheme: Theme | undefined =
+    typeof theme === "string" ? THEMES[theme as ThemeKey] : theme;
 
   return `
   :root {
-    --background: ${resolvedTheme?.background ?? ''};
-    --foreground: ${resolvedTheme?.foreground ?? ''};
+    --background: ${resolvedTheme?.background ?? ""};
+    --foreground: ${resolvedTheme?.foreground ?? ""};
 
-    --card: ${resolvedTheme?.card ?? ''};
-    --card-foreground: ${resolvedTheme?.cardForeground ?? ''};
+    --card: ${resolvedTheme?.card ?? ""};
+    --card-foreground: ${resolvedTheme?.cardForeground ?? ""};
 
-    --popover: ${resolvedTheme?.popover ?? ''};
-    --popover-foreground: ${resolvedTheme?.popoverForeground ?? ''};
+    --popover: ${resolvedTheme?.popover ?? ""};
+    --popover-foreground: ${resolvedTheme?.popoverForeground ?? ""};
 
-    --primary: ${resolvedTheme?.primary ?? ''};
-    --primary-rgb: ${resolvedTheme?.primaryRgb ?? ''};
-    --primary-foreground: ${resolvedTheme?.primaryForeground ?? ''};
+    --primary: ${resolvedTheme?.primary ?? ""};
+    --primary-rgb: ${resolvedTheme?.primaryRgb ?? ""};
+    --primary-foreground: ${resolvedTheme?.primaryForeground ?? ""};
 
-    --secondary: ${resolvedTheme?.secondary ?? ''};
-    --secondary-foreground: ${resolvedTheme?.secondaryForeground ?? ''};
+    --secondary: ${resolvedTheme?.secondary ?? ""};
+    --secondary-foreground: ${resolvedTheme?.secondaryForeground ?? ""};
 
-    --muted: ${resolvedTheme?.muted ?? ''};
-    --muted-foreground: ${resolvedTheme?.mutedForeground ?? ''};
+    --muted: ${resolvedTheme?.muted ?? ""};
+    --muted-foreground: ${resolvedTheme?.mutedForeground ?? ""};
 
-    --accent: ${resolvedTheme?.accent ?? ''};
-    --accent-foreground: ${resolvedTheme?.accentForeground ?? ''};
+    --accent: ${resolvedTheme?.accent ?? ""};
+    --accent-foreground: ${resolvedTheme?.accentForeground ?? ""};
 
-    --destructive: ${resolvedTheme?.destructive ?? ''};
+    --destructive: ${resolvedTheme?.destructive ?? ""};
 
-    --border: ${resolvedTheme?.border ?? ''};
-    --input: ${resolvedTheme?.input ?? ''};
-    --ring: ${resolvedTheme?.ring ?? ''};
+    --border: ${resolvedTheme?.border ?? ""};
+    --input: ${resolvedTheme?.input ?? ""};
+    --ring: ${resolvedTheme?.ring ?? ""};
 
-    --radius: ${resolvedTheme?.radius ?? ''};
+    --radius: ${resolvedTheme?.radius ?? ""};
 
     /* charts */
-    --chart-1: ${resolvedTheme?.chart?.[0] ?? ''};
-    --chart-2: ${resolvedTheme?.chart?.[1] ?? ''};
-    --chart-3: ${resolvedTheme?.chart?.[2] ?? ''};
-    --chart-4: ${resolvedTheme?.chart?.[3] ?? ''};
-    --chart-5: ${resolvedTheme?.chart?.[4] ?? ''};
+    --chart-1: ${resolvedTheme?.chart?.[0] ?? ""};
+    --chart-2: ${resolvedTheme?.chart?.[1] ?? ""};
+    --chart-3: ${resolvedTheme?.chart?.[2] ?? ""};
+    --chart-4: ${resolvedTheme?.chart?.[3] ?? ""};
+    --chart-5: ${resolvedTheme?.chart?.[4] ?? ""};
   }
   `;
 }
@@ -807,3 +808,88 @@ export const getThemeCssVariables = (theme: Theme): React.CSSProperties => {
     "--radius": theme.radius,
   } as React.CSSProperties;
 };
+
+export function buildHtml(
+  theme: Theme | string | undefined,
+  screenCode?: string
+): string {
+  const normalizedCode = (
+    (screenCode && screenCode.replace(/```\w*/g, "").trim()) ??
+    ""
+  )
+    .replace(/\bbg-white\b/g, "bg-[var(--card)]")
+    .replace(/\bbg-gray-(50|100)\b/g, "bg-[var(--background)]")
+    .replace(/\bborder-gray-(100|200|300)\b/g, "border-[var(--border)]")
+    .replace(/\btext-black\b/g, "text-[var(--foreground)]")
+    .replace(/\btext-gray-(400|500|600)\b/g, "text-[var(--muted-foreground)]")
+    .replace(/\btext-gray-(800|900)\b/g, "text-[var(--foreground)]");
+
+  return `
+    <!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            border: "var(--border)",
+            input: "var(--input)",
+            ring: "var(--ring)",
+            background: "var(--background)",
+            foreground: "var(--foreground)",
+            primary: {
+              DEFAULT: "var(--primary)",
+              foreground: "var(--primary-foreground)",
+            },
+            secondary: {
+              DEFAULT: "var(--secondary)",
+              foreground: "var(--secondary-foreground)",
+            },
+            destructive: {
+              DEFAULT: "var(--destructive)",
+              foreground: "var(--destructive-foreground)",
+            },
+            muted: {
+              DEFAULT: "var(--muted)",
+              foreground: "var(--muted-foreground)",
+            },
+            accent: {
+              DEFAULT: "var(--accent)",
+              foreground: "var(--accent-foreground)",
+            },
+            popover: {
+              DEFAULT: "var(--popover)",
+              foreground: "var(--popover-foreground)",
+            },
+            card: {
+              DEFAULT: "var(--card)",
+              foreground: "var(--card-foreground)",
+            },
+          },
+          borderRadius: {
+            lg: "var(--radius)",
+            md: "calc(var(--radius) - 2px)",
+            sm: "calc(var(--radius) - 4px)",
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    ${themeToCssVars(theme)}
+    html, body { margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; min-width: 0; }
+    img, svg, video, canvas { max-width: 100%; height: auto; }
+    body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+  </style>
+    </head>
+    <body class="bg-[var(--background)] text-[var(--foreground)] w-full">
+    ${normalizedCode}
+    </body>
+    </html>
+`;
+}

@@ -1,4 +1,8 @@
-import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
+import {
+  TransformWrapper,
+  TransformComponent,
+  useControls,
+} from "react-zoom-pan-pinch";
 import ScreenFrame from "./ScreenFrame";
 import { useState } from "react";
 import { ProjectType, ScreenConfigType } from "@/type/types";
@@ -8,9 +12,10 @@ type Props = {
   projectDetail: ProjectType | undefined;
   screenConfig: ScreenConfigType[];
   loading?: boolean;
+  onDeleteScreen?: (screenId: string) => void;
 };
 
-const Canvas = ({ projectDetail, screenConfig }: Props) => {
+const Canvas = ({ projectDetail, screenConfig, onDeleteScreen }: Props) => {
   const [panningEnabled, setPanningEnabled] = useState(true);
   const isMobile = projectDetail?.deviceType === "mobile";
   const Controls = () => {
@@ -71,31 +76,32 @@ const Canvas = ({ projectDetail, screenConfig }: Props) => {
         panning={{ disabled: !panningEnabled }}
       >
         {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
-        <>
-          <Controls />
-          
-        <TransformComponent
-          wrapperStyle={{ width: "100%", height: "100%" }}
-          contentStyle={{
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          {screenConfig?.map((screen, index) => (
-            <ScreenFrame
-              key={screen.screenId}
-              x={index * (SCREEN_WIDTH + GAP)}
-              y={100}
-              width={SCREEN_WIDTH}
-              height={SCREEN_HEIGHT}
-              setPanningEnabled={setPanningEnabled}
-              screen={screen}
-              projectDetail={projectDetail}
-            />
-          ))}
-        </TransformComponent>
-        </>
-      )}
+          <>
+            <Controls />
+
+            <TransformComponent
+              wrapperStyle={{ width: "100%", height: "100%" }}
+              contentStyle={{
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              {screenConfig?.map((screen, index) => (
+                <ScreenFrame
+                  key={screen.screenId}
+                  x={index * (SCREEN_WIDTH + GAP)}
+                  y={100}
+                  width={SCREEN_WIDTH}
+                  height={SCREEN_HEIGHT}
+                  setPanningEnabled={setPanningEnabled}
+                  screen={screen}
+                  projectDetail={projectDetail}
+                  onDeleteScreen={onDeleteScreen}
+                />
+              ))}
+            </TransformComponent>
+          </>
+        )}
       </TransformWrapper>
     </div>
   );

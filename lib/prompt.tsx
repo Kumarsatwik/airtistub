@@ -127,12 +127,16 @@ NO markdown, NO comments, NO explanations
 NO JavaScript, NO canvas — SVG ONLY for charts
 Images rules:
 Avatars → https://i.pravatar.cc/400
-Other images → https://source.unsplash.com/400x300/?{keyword}
+Other images → https://picsum.photos/seed/<simple-slug>/1200/800
+- Replace <simple-slug> with plain text like "music-app" or "finance-dashboard" (NO braces)
+- Always wrap images in an aspect-ratio container and use object-cover
 Theme variables are PREDEFINED by parent — NEVER redeclare
-Use CSS variables for foundational colors ONLY:
-bg-[var(--background)]
-text-[var(--foreground)]
-bg-[var(--card)]
+Theme enforcement:
+- DO NOT use Tailwind default grays/whites/blacks for surfaces (no bg-white, text-black, bg-gray-*, text-gray-*)
+- Use CSS variables for foundational colors:
+  bg-[var(--background)] text-[var(--foreground)]
+  bg-[var(--card)] border-[var(--border)]
+  text-[var(--muted-foreground)] bg-[var(--muted)]
 User visual instructions ALWAYS override default rules
 ────────────────────────────────────────
 DESIGN QUALITY BAR

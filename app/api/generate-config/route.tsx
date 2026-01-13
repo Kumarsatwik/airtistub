@@ -85,7 +85,6 @@ function contentToText(content: unknown): string | null {
  * Implements retry logic for AI validation failures and handles database persistence
  */
 export async function POST(req: NextRequest) {
-
   // Authenticate user via Clerk
   const user = await currentUser();
   if (!user) {
@@ -284,6 +283,54 @@ Please regenerate a valid config JSON that matches the required schema with prop
     console.error("Database persistence error:", error);
     return NextResponse.json(
       { error: "Failed to persist generated config" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const url = new URL(req.url);
+  const projectIdFromQuery = url.searchParams.get("projectId") ?? undefined;
+  const screenIdFromQuery = url.searchParams.get("screenId") ?? undefined;
+
+  let projectId: string | undefined = projectIdFromQuery;
+  let screenId: string | undefined = screenIdFromQuery;
+
+  if (!projectId || !screenId) {
+    try {
+      const body = (await req.json()) as {
+        projectId?: string;
+        screenId?: string;
+      };
+      projectId = projectId ?? body.projectId;
+      screenId = screenId ?? body.screenId;
+    } catch {
+      // ignore
+    }
+  }
+  if (!projectId || !screenId) {
+    return NextResponse.json(
+      { error: "Missing projectId or screenId" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    // Delete screen configuration from database
+    await db
+      .delete(screenConfigTable)
+      .where(
+        and(
+          eq(screenConfigTable.projectId, projectId),
+          eq(screenConfigTable.screenId, screenId)
+        )
+      );
+
+    return NextResponse.json({ message: "Screen deleted successfully" });
+  } catch (error) {
+    console.error("Database deletion error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete screen config" },
       { status: 500 }
     );
   }

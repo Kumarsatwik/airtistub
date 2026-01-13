@@ -19,23 +19,30 @@ type Props = {
 };
 
 const SettingsSection = ({ projectDetail }: Props) => {
-  const [selectedTheme, setSelectedTheme] = useState<(typeof THEME_NAME_LIST)[number]>(THEME_NAME_LIST[0]);
+  const [selectedTheme, setSelectedTheme] = useState<
+    (typeof THEME_NAME_LIST)[number]
+  >(THEME_NAME_LIST[0]);
 
   const [draftProjectName, setDraftProjectName] = useState<string | null>(null);
   const [userNewScreenInput, setUserNewScreenInput] = useState<string>("");
-  const {setSettingDetail}=useContext(SettingContext);
+  const { setSettingDetail } = useContext(SettingContext);
 
-  useEffect(()=>{
-    projectDetail && setDraftProjectName(projectDetail.projectName ?? null)
-    if (projectDetail?.theme) {
-      setSelectedTheme(projectDetail.theme as (typeof THEME_NAME_LIST)[number]);
-    }
-  },[projectDetail])
+  useEffect(() => {
+    if (!projectDetail) return;
+    queueMicrotask(() => {
+      setDraftProjectName(projectDetail.projectName ?? null);
+      if (projectDetail.theme) {
+        setSelectedTheme(
+          projectDetail.theme as (typeof THEME_NAME_LIST)[number]
+        );
+      }
+    });
+  }, [projectDetail]);
 
-  const onThemeSelect=(theme: (typeof THEME_NAME_LIST)[number])=>{
-    setSelectedTheme(theme)
-    setSettingDetail((prev:any)=>({...prev,theme}));
-  }
+  const onThemeSelect = (theme: (typeof THEME_NAME_LIST)[number]) => {
+    setSelectedTheme(theme);
+    setSettingDetail((prev) => (prev ? { ...prev, theme } : prev));
+  };
   return (
     <div className="w-1/4 h-[90vh] border-r p-4 flex flex-col gap-6">
       <h2 className="font-semibold text-xl tracking-tight">Settings</h2>
@@ -48,8 +55,12 @@ const SettingsSection = ({ projectDetail }: Props) => {
           placeholder="Enter project name"
           value={draftProjectName ?? ""}
           onChange={(event) => {
-            setDraftProjectName(event.target.value) 
-            setSettingDetail((prev:any)=>({...prev,projectName:draftProjectName})); }}
+            const nextName = event.target.value;
+            setDraftProjectName(nextName);
+            setSettingDetail((prev) =>
+              prev ? { ...prev, projectName: nextName } : prev
+            );
+          }}
         />
       </div>
 
