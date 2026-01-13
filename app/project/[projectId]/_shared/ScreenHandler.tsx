@@ -20,10 +20,10 @@ import {
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { vs2015 } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { toast } from "sonner";
-import { buildHtml } from "@/lib/constant";
+import { buildHtml, type Theme } from "@/lib/constant";
 type Props = {
   screen: ScreenConfigType | undefined;
-  theme: string;
+  theme: Theme | string | undefined;
   iframeRef: { current: HTMLIFrameElement | null };
 };
 
