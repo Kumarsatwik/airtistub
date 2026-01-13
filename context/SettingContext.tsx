@@ -1,10 +1,14 @@
 import { createContext, Dispatch, SetStateAction } from "react";
+import type { ProjectType } from "@/type/types";
 
-export const SettingContext = createContext<{
-  settingDetail: any;
-  setSettingDetail: Dispatch<SetStateAction<any>>;
-}>({
+export type SettingContextValue = {
+  settingDetail: ProjectType | null;
+  setSettingDetail: Dispatch<SetStateAction<ProjectType | null>>;
+};
+
+export const SettingContext = createContext<SettingContextValue>({
   settingDetail: null,
-  setSettingDetail: () => {},
+  setSettingDetail: (() => undefined) as Dispatch<
+    SetStateAction<ProjectType | null>
+  >,
 });
-
