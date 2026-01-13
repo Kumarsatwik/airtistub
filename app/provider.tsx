@@ -5,12 +5,13 @@ import { UserDetailContext } from "@/context/UserDetailContext";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { SettingContext } from "@/context/SettingContext";
+import type { ProjectType } from "@/type/types";
 
 const Provider = ({ children }: { children: React.ReactNode }) => {
   const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const [userDetails, setUserDetail] = useState<unknown>(null);
-  const [settingDetail,setSettingDetail]=useState<any>(null);
+  const [settingDetail, setSettingDetail] = useState<ProjectType | null>(null);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
