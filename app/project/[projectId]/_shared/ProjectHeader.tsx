@@ -7,15 +7,19 @@ import axios from "axios";
 import { toast } from "sonner";
 
 const ProjectHeader = () => {
-  const {settingDetail,setSettingDetail}=useContext(SettingContext)
-  const [loading,setLoading]=useState(false)
+  const { settingDetail } = useContext(SettingContext);
+  const [loading, setLoading] = useState(false);
   const onSave = async () => {
+    if (!settingDetail) {
+      toast.error("Project not loaded yet");
+      return;
+    }
     setLoading(true);
     try {
-      await axios.put('/api/project', {
+      await axios.put("/api/project", {
         theme: settingDetail.theme,
         projectId: settingDetail.projectId,
-        projectName: settingDetail.projectName
+        projectName: settingDetail.projectName,
       });
       toast.success("Project saved successfully");
     } catch (error) {
@@ -37,7 +41,12 @@ const ProjectHeader = () => {
       </div>
       <Button onClick={onSave} disabled={loading}>
         {" "}
-        {loading ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> : <Save /> } Save
+        {loading ? (
+          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Save />
+        )}{" "}
+        Save
       </Button>
     </div>
   );
