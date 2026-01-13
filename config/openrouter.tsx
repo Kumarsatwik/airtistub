@@ -25,7 +25,7 @@ export async function API_CALL(
       { role: "user" as const, content: userPrompt },
     ];
 
-    let response: any;
+    let response: unknown;
 
     if (provider === "openrouter") {
       response = await openrouter.chat.send({
@@ -39,7 +39,11 @@ export async function API_CALL(
       });
     }
 
-    const content = response.choices?.[0]?.message?.content;
+    const content = (
+      response as {
+        choices?: Array<{ message?: { content?: string } }>;
+      }
+    ).choices?.[0]?.message?.content;
 
     if (!content) {
       throw new Error(`Empty response from ${provider}`);
