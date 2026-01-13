@@ -11,7 +11,7 @@ const Header = () => {
       <div className="flex gap-2 items-center">
         <Image
           src="https://img.icons8.com/arcade/128/design.png"
-          alt="logo"
+          alt="Airtistub - AI-powered UI design tool logo"
           width={40}
           height={40}
         />
