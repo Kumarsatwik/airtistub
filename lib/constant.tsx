@@ -813,10 +813,22 @@ export function buildHtml(
   theme: Theme | string | undefined,
   screenCode?: string
 ): string {
+  const normalizedCode = (
+    (screenCode && screenCode.replace(/```\w*/g, "").trim()) ??
+    ""
+  )
+    .replace(/\bbg-white\b/g, "bg-[var(--card)]")
+    .replace(/\bbg-gray-(50|100)\b/g, "bg-[var(--background)]")
+    .replace(/\bborder-gray-(100|200|300)\b/g, "border-[var(--border)]")
+    .replace(/\btext-black\b/g, "text-[var(--foreground)]")
+    .replace(/\btext-gray-(400|500|600)\b/g, "text-[var(--muted-foreground)]")
+    .replace(/\btext-gray-(800|900)\b/g, "text-[var(--foreground)]");
+
   return `
     <!doctype html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
@@ -869,11 +881,14 @@ export function buildHtml(
   </script>
   <style>
     ${themeToCssVars(theme)}
-    body { font-family: 'Inter', sans-serif; }
+    html, body { margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; min-width: 0; }
+    img, svg, video, canvas { max-width: 100%; height: auto; }
+    body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
   </style>
     </head>
     <body class="bg-[var(--background)] text-[var(--foreground)] w-full">
-    ${(screenCode && screenCode.replace(/```\w*/g, "").trim()) ?? ""}
+    ${normalizedCode}
     </body>
     </html>
 `;
